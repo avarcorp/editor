@@ -1,0 +1,53 @@
+# 태그를 밀면 npm 에 올린다.
+#
+#   npm version patch && git push --follow-tags
+#
+# 인증은 Trusted Publishing(OIDC)으로 한다 — 저장소에 토큰을 두지 않는다.
+# npmjs.com 의 패키지 Settings 에 이 저장소와 이 파일 이름이 등록돼 있어야 한다.
+name: publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # OIDC 토큰을 받는 자리. 이게 없으면 npm 이 누구인지 확인하지 못한다.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Trusted Publishing 은 npm 11.5.1 부터 된다. 같이 오는 버전이 낮을 수 있다.
+      - run: npm install -g npm@latest
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 태그와 package.json 버전이 같은가
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "태그 $tag 와 package.json $pkg 가 다릅니다." >&2
+            exit 1
+          fi
+
+      - run: pnpm run check
+      - run: pnpm run typecheck
+      - run: pnpm run test
+      - run: pnpm run build
+
+      # 출처 증명(provenance)은 Trusted Publishing 에서 자동으로 붙는다.
+      - run: npm publish

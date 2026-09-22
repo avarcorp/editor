@@ -1,5 +1,12 @@
-import { $isTableNode } from "@lexical/table";
-import { $createParagraphNode, $getRoot, $isElementNode } from "lexical";
+import { $isCodeNode } from "@lexical/code";
+import {
+	$createParagraphNode,
+	$getRoot,
+	$getSelection,
+	$isElementNode,
+	type ElementNode,
+	type LexicalEditor,
+} from "lexical";
 import { SKIP_AUTOSAVE_TAG } from "../media/media-upload.ts";
 
 /**
@@ -39,20 +46,72 @@ export function followDistance(
 }
 
 /**
+ * 이 블록 안에서 본문을 이어 쓸 수 있는가. 커서가 들어가는 블록(ElementNode)만
+ * 묻는다 — 사진 · 구분선 · 영상은 들어갈 속이 없어 부르는 쪽에서 걸러진다.
+ *
+ * 묻는 건 커서가 들어가느냐가 아니라 거기 친 글자가 본문의 연장이 되느냐다.
+ * 본문 아래를 누르는 건 "여기에 글을 쓰겠다" 는 뜻이라서다. 표는 속이 있지만
+ * 칸 안은 따로 노는 문서다(isShadowRoot — 표가 아닌 커스텀 격자도 같이 걸린다).
+ * 코드블록은 글자를 받지만 그건 코드지 본문이 아니다 — 친 글자마다 문법 색이
+ * 입는다. 인용구 · 목록 · 제목은 모양만 다른 본문이라 그 안에서 이어 쓴다.
+ *
+ * 코드블록도 끝에서 Enter 를 세 번 치면 빠져나오기는 한다
+ * ($exitCodeNodeOnEnter). 아래를 눌러 놓고 빈 줄을 세 번 넣어야 하는 건 이어
+ * 쓰기가 아니라서 출구로 치지 않는다.
+ *
+ * 모르는 블록은 이어 쓸 수 있다고 본다 — 커스텀 노드는 대개 문단을 담는
+ * 껍데기다. 다만 본문 아닌 것을 담는 커스텀 ElementNode(터미널 · 다이어그램
+ * 같은 것)가 shadow root 도 아니면 여기서 걸러지지 않는다. 그런 노드는 표처럼
+ * isShadowRoot() 를 켜 두면 된다.
+ */
+function $canContinueWriting(node: ElementNode): boolean {
+	if (node.isShadowRoot()) return false;
+	return !$isCodeNode(node);
+}
+
+/**
  * 본문 아래 빈 곳을 눌렀을 때 커서를 글 끝에 둔다.
  *
- * 마지막 블록이 글을 이어 쓸 수 없는 것(사진 · 구분선 · 표 등)이면 그 아래에
- * 빈 문단을 만든다. 사진으로 끝난 글에서 아래를 눌렀는데 아무 일도 없으면
+ * 마지막 블록이 본문을 이어 쓸 수 없는 것(사진 · 구분선 · 표 · 코드블록)이면 그
+ * 아래에 빈 문단을 만든다. 사진으로 끝난 글에서 아래를 눌렀는데 아무 일도 없으면
  * 이어 쓸 방법을 찾아야 한다.
  */
 export function $placeCaretAtEnd(): void {
 	const root = $getRoot();
 	const last = root.getLastChild();
-	if ($isElementNode(last) && !$isTableNode(last)) {
+	if ($isElementNode(last) && $canContinueWriting(last)) {
 		last.selectEnd();
 		return;
 	}
 	const paragraph = $createParagraphNode();
 	root.append(paragraph);
 	paragraph.select();
+}
+
+/**
+ * 본문에 포커스를 준다. 커서가 없으면 글 끝의 이어 쓸 수 있는 자리에 둔다.
+ *
+ * Lexical 의 editor.focus() 는 커서가 없을 때 root.selectEnd() 로 떨어진다.
+ * 그러면 코드블록·표로 끝난 글에서 커서가 그 안에 놓여, 본문 아래를 눌렀을 때와
+ * 같은 막힘이 포커스 경로로 되돌아온다. 자리를 고르는 일은 $placeCaretAtEnd() 에
+ * 맡긴다.
+ *
+ * 커서가 이미 있으면 그대로 둔다. 앱이 포커스를 돌려줄 때마다 글 끝으로 튀면
+ * 쓰던 자리를 잃는다 — editor.focus() 도 같은 이유로 기존 선택을 지킨다.
+ *
+ * 값을 치른다. 사진·구분선·표·코드블록으로 끝난 글에 커서 없이 포커스를 주면
+ * 빈 문단이 하나 붙는다. 포커스가 글을 바꾸는 셈이라 자동저장과 되돌리기에도
+ * 올라간다. 그래도 커서를 나올 수 없는 곳에 두는 것보다는 낫다고 보았다 —
+ * 본문 아래 빈 곳을 누를 때 이미 같은 값을 치르고 있다.
+ */
+export function focusEditor(editor: LexicalEditor): void {
+	editor.update(
+		() => {
+			if ($getSelection() === null) $placeCaretAtEnd();
+		},
+		// 자리를 잡고 나서 포커스가 가야 한다 — 미뤄 두면 editor.focus() 가 아직
+		// 커서 없는 문서를 보고 제 나름대로 root.selectEnd() 를 한다
+		{ discrete: true },
+	);
+	editor.focus();
 }

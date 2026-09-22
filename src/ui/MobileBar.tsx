@@ -25,6 +25,7 @@ import {
 } from "../actions.ts";
 import { useEditorEnv } from "../context.tsx";
 import { cx } from "../cx.ts";
+import { focusEditor } from "../plugins/caret-follow.ts";
 import { type Align, useToolbarState } from "../plugins/useToolbarState.ts";
 import { DividerPicker } from "./DividerPicker.tsx";
 import { Icon, type IconName } from "./icons.tsx";
@@ -152,7 +153,7 @@ export function MobileBar({
 	const openPanel = (next: Panel) => {
 		if (panel === next) {
 			setPanel(null);
-			editor.focus();
+			focusEditor(editor);
 			return;
 		}
 		saved.current = editor

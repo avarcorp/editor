@@ -1,9 +1,14 @@
 // @vitest-environment happy-dom
-import { cleanup, render } from "@testing-library/react";
+import { $createCodeNode } from "@lexical/code";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import {
 	$createParagraphNode,
 	$createTextNode,
 	$getRoot,
+	$getSelection,
+	$isRangeSelection,
+	type ElementNode,
+	type LexicalNode,
 	UNDO_COMMAND,
 } from "lexical";
 import { createRef } from "react";
@@ -11,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Editor, type EditorHandle } from "./Editor.tsx";
 import { en } from "./messages/en.ts";
 import { $createDividerNode } from "./nodes/DividerNode.tsx";
+import { $createImageNode } from "./nodes/ImageNode.tsx";
 
 afterEach(cleanup);
 
@@ -147,5 +153,159 @@ describe("빈 글 판정", () => {
 		);
 
 		expect(ref.current?.isEmpty()).toBe(false);
+	});
+});
+
+describe("본문 아래 빈 곳 (issue #1)", () => {
+	/** 본문 끝에 코드블록을 놓는다 — 글을 코드 예제로 맺은 모양. */
+	function endWithCode(handle: EditorHandle | null) {
+		handle?.lexical()?.update(
+			() => {
+				const root = $getRoot();
+				root.clear();
+				root.append(
+					$createParagraphNode().append($createTextNode("설치는 이렇게 한다")),
+					$createCodeNode().append(
+						$createTextNode("pnpm add @avarlabs/editor"),
+					),
+				);
+			},
+			{ discrete: true },
+		);
+	}
+
+	/** 블록 구성과 커서가 놓인 블록. 문단만 생기고 커서가 안 가면 여전히 막힌다. */
+	function endState(handle: EditorHandle | null) {
+		return (
+			handle
+				?.lexical()
+				?.getEditorState()
+				.read(() => {
+					const children = $getRoot().getChildren();
+					const selection = $getSelection();
+					const caret = $isRangeSelection(selection)
+						? selection.anchor.getNode().getTopLevelElementOrThrow().getType()
+						: null;
+					return {
+						count: children.length,
+						last: children[children.length - 1]?.getType() ?? null,
+						caret,
+					};
+				}) ?? null
+		);
+	}
+
+	it("코드블록으로 끝난 글에서도 아래를 누르면 이어 쓸 문단이 생긴다", async () => {
+		const ref = createRef<EditorHandle>();
+		const view = render(<Editor messages={en} handleRef={ref} />);
+		endWithCode(ref.current);
+
+		// 아직 아무 데도 누르지 않아 커서가 없다
+		expect(endState(ref.current)).toEqual({
+			count: 2,
+			last: "code",
+			caret: null,
+		});
+
+		const tail = view.container.querySelector(".le-content-tail");
+		if (!tail) throw new Error("본문 아래 빈 곳이 없다");
+		await act(async () => {
+			fireEvent.mouseDown(tail);
+		});
+
+		expect(endState(ref.current)).toEqual({
+			count: 3,
+			last: "paragraph",
+			caret: "paragraph",
+		});
+	});
+});
+
+describe("handle.focus() 로 들어올 때 (issue #1)", () => {
+	function endWith(handle: EditorHandle | null, tail: () => LexicalNode) {
+		handle?.lexical()?.update(
+			() => {
+				const root = $getRoot();
+				root.clear();
+				root.append(
+					$createParagraphNode().append($createTextNode("설치는 이렇게 한다")),
+					tail(),
+				);
+			},
+			{ discrete: true },
+		);
+	}
+
+	function endState(handle: EditorHandle | null) {
+		return (
+			handle
+				?.lexical()
+				?.getEditorState()
+				.read(() => {
+					const children = $getRoot().getChildren();
+					const selection = $getSelection();
+					return {
+						count: children.length,
+						last: children[children.length - 1]?.getType() ?? null,
+						caret: $isRangeSelection(selection)
+							? selection.anchor.getNode().getTopLevelElementOrThrow().getType()
+							: null,
+					};
+				}) ?? null
+		);
+	}
+
+	it("코드블록으로 끝난 글에 포커스를 주면 이어 쓸 문단에 커서가 간다", () => {
+		const ref = createRef<EditorHandle>();
+		render(<Editor messages={en} handleRef={ref} />);
+		endWith(ref.current, () =>
+			$createCodeNode().append($createTextNode("pnpm add @avarlabs/editor")),
+		);
+
+		ref.current?.focus();
+
+		expect(endState(ref.current)).toEqual({
+			count: 3,
+			last: "paragraph",
+			caret: "paragraph",
+		});
+	});
+
+	it("사진으로 끝난 글도 같다 — 포커스가 문단을 만든다", () => {
+		const ref = createRef<EditorHandle>();
+		render(<Editor messages={en} handleRef={ref} />);
+		endWith(ref.current, () =>
+			$createImageNode({ src: "https://cdn.test/a.png" }),
+		);
+
+		ref.current?.focus();
+
+		expect(endState(ref.current)).toEqual({
+			count: 3,
+			last: "paragraph",
+			caret: "paragraph",
+		});
+	});
+
+	it("커서가 이미 있으면 그 자리를 지킨다", () => {
+		const ref = createRef<EditorHandle>();
+		render(<Editor messages={en} handleRef={ref} />);
+		endWith(ref.current, () =>
+			$createCodeNode().append($createTextNode("pnpm add @avarlabs/editor")),
+		);
+		ref.current?.lexical()?.update(
+			() => {
+				$getRoot().getFirstChild<ElementNode>()?.selectEnd();
+			},
+			{ discrete: true },
+		);
+
+		ref.current?.focus();
+
+		expect(endState(ref.current)).toEqual({
+			count: 2,
+			last: "code",
+			caret: "paragraph",
+		});
 	});
 });

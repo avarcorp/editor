@@ -30,7 +30,8 @@ jobs:
           cache: pnpm
 
       # Trusted Publishing 은 npm 11.5.1 부터 된다. 같이 오는 버전이 낮을 수 있다.
-      - run: npm install -g npm@latest
+      # latest 로 두면 메이저가 바뀔 때 Node 요구 버전이 같이 올라가 깨질 수 있어 11 로 고정한다.
+      - run: npm install -g npm@11
 
       - run: pnpm install --frozen-lockfile
 

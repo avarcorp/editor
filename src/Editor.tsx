@@ -53,7 +53,7 @@ import { registerAutoSave } from "./plugins/autosave.ts";
 import { BlockInserterPlugin } from "./plugins/BlockInserterPlugin.tsx";
 import { CaretFollowPlugin } from "./plugins/CaretFollowPlugin.tsx";
 import { CodeHighlightPlugin } from "./plugins/CodeHighlightPlugin.tsx";
-import { $placeCaretAtEnd } from "./plugins/caret-follow.ts";
+import { $placeCaretAtEnd, focusEditor } from "./plugins/caret-follow.ts";
 import { DividerPlugin } from "./plugins/DividerPlugin.tsx";
 import { FloatingToolbarPlugin } from "./plugins/FloatingToolbarPlugin.tsx";
 import { MediaDropPlugin } from "./plugins/MediaDropPlugin.tsx";
@@ -457,7 +457,7 @@ function createHandle(
 			);
 			editor.dispatchCommand(CLEAR_HISTORY_COMMAND, undefined);
 		},
-		focus: () => editor.focus(),
+		focus: () => focusEditor(editor),
 		insertMedia: (items, layout = "sequence") =>
 			editor.update(() => $insertMedia(items, layout)),
 		lexical: () => editor,

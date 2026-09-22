@@ -7,6 +7,8 @@ import {
 	$getRoot,
 	$getSelection,
 	$isRangeSelection,
+	type ElementNode,
+	type LexicalNode,
 	UNDO_COMMAND,
 } from "lexical";
 import { createRef } from "react";
@@ -14,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Editor, type EditorHandle } from "./Editor.tsx";
 import { en } from "./messages/en.ts";
 import { $createDividerNode } from "./nodes/DividerNode.tsx";
+import { $createImageNode } from "./nodes/ImageNode.tsx";
 
 afterEach(cleanup);
 
@@ -213,6 +216,95 @@ describe("본문 아래 빈 곳 (issue #1)", () => {
 		expect(endState(ref.current)).toEqual({
 			count: 3,
 			last: "paragraph",
+			caret: "paragraph",
+		});
+	});
+});
+
+describe("handle.focus() 로 들어올 때 (issue #1)", () => {
+	function endWith(handle: EditorHandle | null, tail: () => LexicalNode) {
+		handle?.lexical()?.update(
+			() => {
+				const root = $getRoot();
+				root.clear();
+				root.append(
+					$createParagraphNode().append($createTextNode("설치는 이렇게 한다")),
+					tail(),
+				);
+			},
+			{ discrete: true },
+		);
+	}
+
+	function endState(handle: EditorHandle | null) {
+		return (
+			handle
+				?.lexical()
+				?.getEditorState()
+				.read(() => {
+					const children = $getRoot().getChildren();
+					const selection = $getSelection();
+					return {
+						count: children.length,
+						last: children[children.length - 1]?.getType() ?? null,
+						caret: $isRangeSelection(selection)
+							? selection.anchor.getNode().getTopLevelElementOrThrow().getType()
+							: null,
+					};
+				}) ?? null
+		);
+	}
+
+	it("코드블록으로 끝난 글에 포커스를 주면 이어 쓸 문단에 커서가 간다", () => {
+		const ref = createRef<EditorHandle>();
+		render(<Editor messages={en} handleRef={ref} />);
+		endWith(ref.current, () =>
+			$createCodeNode().append($createTextNode("pnpm add @avarlabs/editor")),
+		);
+
+		ref.current?.focus();
+
+		expect(endState(ref.current)).toEqual({
+			count: 3,
+			last: "paragraph",
+			caret: "paragraph",
+		});
+	});
+
+	it("사진으로 끝난 글도 같다 — 포커스가 문단을 만든다", () => {
+		const ref = createRef<EditorHandle>();
+		render(<Editor messages={en} handleRef={ref} />);
+		endWith(ref.current, () =>
+			$createImageNode({ src: "https://cdn.test/a.png" }),
+		);
+
+		ref.current?.focus();
+
+		expect(endState(ref.current)).toEqual({
+			count: 3,
+			last: "paragraph",
+			caret: "paragraph",
+		});
+	});
+
+	it("커서가 이미 있으면 그 자리를 지킨다", () => {
+		const ref = createRef<EditorHandle>();
+		render(<Editor messages={en} handleRef={ref} />);
+		endWith(ref.current, () =>
+			$createCodeNode().append($createTextNode("pnpm add @avarlabs/editor")),
+		);
+		ref.current?.lexical()?.update(
+			() => {
+				$getRoot().getFirstChild<ElementNode>()?.selectEnd();
+			},
+			{ discrete: true },
+		);
+
+		ref.current?.focus();
+
+		expect(endState(ref.current)).toEqual({
+			count: 2,
+			last: "code",
 			caret: "paragraph",
 		});
 	});

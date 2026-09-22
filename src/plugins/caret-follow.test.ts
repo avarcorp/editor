@@ -21,6 +21,7 @@ import { editorNodes } from "../nodes/index.ts";
 import { editorTheme } from "../theme.ts";
 import {
 	$placeCaretAtEnd,
+	focusEditor,
 	followDistance,
 	isTypingUpdate,
 } from "./caret-follow.ts";
@@ -286,5 +287,51 @@ describe("$placeCaretAtEnd — 본문 아래 빈 곳을 눌렀을 때", () => {
 			type: "paragraph",
 			atEnd: true,
 		});
+	});
+});
+
+describe("focusEditor — 본문에 포커스를 줄 때", () => {
+	it("커서가 없고 코드블록으로 끝나면 그 아래 문단에 둔다", () => {
+		const editor = makeEditor();
+		editor.update(
+			() => {
+				$getRoot().append(
+					$createParagraphNode().append($createTextNode("설치")),
+					$createCodeNode().append($createTextNode("pnpm add x")),
+				);
+			},
+			{ discrete: true },
+		);
+		focusEditor(editor);
+		expect(caretIn(editor)).toEqual({
+			index: 2,
+			type: "paragraph",
+			atEnd: true,
+		});
+	});
+
+	it("커서가 이미 있으면 건드리지 않는다", () => {
+		const editor = makeEditor();
+		editor.update(
+			() => {
+				const first = $createParagraphNode().append($createTextNode("첫 줄"));
+				$getRoot().append(
+					first,
+					$createCodeNode().append($createTextNode("pnpm add x")),
+				);
+				first.selectEnd();
+			},
+			{ discrete: true },
+		);
+		focusEditor(editor);
+		// 앱이 포커스를 돌려줄 때마다 커서가 글 끝으로 튀면 쓰던 자리를 잃는다
+		expect(caretIn(editor)).toEqual({
+			index: 0,
+			type: "paragraph",
+			atEnd: true,
+		});
+		expect(
+			editor.getEditorState().read(() => $getRoot().getChildrenSize()),
+		).toBe(2);
 	});
 });

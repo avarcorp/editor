@@ -1,3 +1,7 @@
+import { $createCodeNode } from "@lexical/code";
+import { $createListItemNode, $createListNode } from "@lexical/list";
+import { $createQuoteNode } from "@lexical/rich-text";
+import { $createTableNodeWithDimensions } from "@lexical/table";
 import {
 	$createParagraphNode,
 	$createTextNode,
@@ -160,6 +164,75 @@ describe("$placeCaretAtEnd — 본문 아래 빈 곳을 눌렀을 때", () => {
 			type: "paragraph",
 			atEnd: true,
 		});
+	});
+
+	it("마지막이 코드블록이면 그 아래에 새 문단을 만든다", () => {
+		const editor = makeEditor();
+		editor.update(
+			() => {
+				$getRoot().append(
+					$createParagraphNode().append($createTextNode("예제를 보자")),
+					$createCodeNode().append($createTextNode("const a = 1;")),
+				);
+				$placeCaretAtEnd();
+			},
+			{ discrete: true },
+		);
+		// 코드블록 안에서는 Enter 가 줄바꿈이라 빠져나올 길이 없다
+		expect(caretIn(editor)).toEqual({
+			index: 2,
+			type: "paragraph",
+			atEnd: true,
+		});
+	});
+
+	it("마지막이 표여도 새 문단을 만든다", () => {
+		const editor = makeEditor();
+		editor.update(
+			() => {
+				$getRoot().append(
+					$createParagraphNode().append($createTextNode("표")),
+					$createTableNodeWithDimensions(1, 1, false),
+				);
+				$placeCaretAtEnd();
+			},
+			{ discrete: true },
+		);
+		expect(caretIn(editor)).toEqual({
+			index: 2,
+			type: "paragraph",
+			atEnd: true,
+		});
+	});
+
+	it("마지막이 인용구면 그 안에서 이어 쓴다", () => {
+		const editor = makeEditor();
+		editor.update(
+			() => {
+				$getRoot().append($createQuoteNode().append($createTextNode("인용")));
+				$placeCaretAtEnd();
+			},
+			{ discrete: true },
+		);
+		// Enter 두 번이면 빠져나온다 — 빈 문단을 덧붙일 이유가 없다
+		expect(caretIn(editor)).toEqual({ index: 0, type: "quote", atEnd: true });
+	});
+
+	it("마지막이 목록이면 마지막 항목에서 이어 쓴다", () => {
+		const editor = makeEditor();
+		editor.update(
+			() => {
+				const list = $createListNode("bullet");
+				list.append(
+					$createListItemNode().append($createTextNode("하나")),
+					$createListItemNode().append($createTextNode("둘")),
+				);
+				$getRoot().append(list);
+				$placeCaretAtEnd();
+			},
+			{ discrete: true },
+		);
+		expect(caretIn(editor)).toEqual({ index: 0, type: "list", atEnd: true });
 	});
 
 	it("빈 문서면 문단을 하나 만든다", () => {

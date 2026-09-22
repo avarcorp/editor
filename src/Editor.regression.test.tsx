@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { cleanup, render } from "@testing-library/react";
+import { $createCodeNode } from "@lexical/code";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import {
 	$createParagraphNode,
 	$createTextNode,
@@ -147,5 +148,55 @@ describe("빈 글 판정", () => {
 		);
 
 		expect(ref.current?.isEmpty()).toBe(false);
+	});
+});
+
+describe("본문 아래 빈 곳 (issue #1)", () => {
+	/** 본문 끝에 코드블록을 놓는다 — 글을 코드 예제로 맺은 모양. */
+	function endWithCode(handle: EditorHandle | null) {
+		handle?.lexical()?.update(
+			() => {
+				const root = $getRoot();
+				root.clear();
+				root.append(
+					$createParagraphNode().append($createTextNode("설치는 이렇게 한다")),
+					$createCodeNode().append(
+						$createTextNode("pnpm add @avarlabs/editor"),
+					),
+				);
+			},
+			{ discrete: true },
+		);
+	}
+
+	function lastBlock(handle: EditorHandle | null) {
+		return (
+			handle
+				?.lexical()
+				?.getEditorState()
+				.read(() => {
+					const children = $getRoot().getChildren();
+					return {
+						count: children.length,
+						last: children[children.length - 1]?.getType() ?? null,
+					};
+				}) ?? null
+		);
+	}
+
+	it("코드블록으로 끝난 글에서도 아래를 누르면 이어 쓸 문단이 생긴다", async () => {
+		const ref = createRef<EditorHandle>();
+		const view = render(<Editor messages={en} handleRef={ref} />);
+		endWithCode(ref.current);
+
+		expect(lastBlock(ref.current)).toEqual({ count: 2, last: "code" });
+
+		const tail = view.container.querySelector(".le-content-tail");
+		if (!tail) throw new Error("본문 아래 빈 곳이 없다");
+		await act(async () => {
+			fireEvent.mouseDown(tail);
+		});
+
+		expect(lastBlock(ref.current)).toEqual({ count: 3, last: "paragraph" });
 	});
 });

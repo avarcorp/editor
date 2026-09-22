@@ -1,0 +1,138 @@
+/*
+ * 에디터가 내보낸 HTML 을 읽는 화면에서 그리는 법.
+ *
+ * 글자 활자(본문 크기 · 제목 · 인용)는 앱이 정한다. 여기엔 에디터만 아는
+ * 모양 — 사진 줄, 재생기 틀, 구분선 모양 — 만 둔다. 에디터 안에서도 같은
+ * 규칙으로 그려서 쓴 대로 보이게 한다.
+ */
+
+/* 나란히 놓은 사진 (ImageRowNode.exportDOM).
+ * 사진마다 flex-grow 를 가로세로비로 주고 basis 를 0 으로 두면 높이가 저절로
+ * 같아진다. 몫은 사진마다 달라서 노드가 인라인으로 싣는다. */
+.image-row-track {
+	display: flex;
+	gap: 6px;
+}
+
+.image-row-track img {
+	display: block;
+	min-width: 0;
+	width: 100%;
+	height: auto;
+	margin: 0;
+	border-radius: calc(var(--editor-radius, 12px) - 4px);
+}
+
+/* 임베드는 16:9 로 고정한다. 높이를 비워두면 재생기가 붙는 순간 아래 글이
+ * 통째로 밀린다. */
+.embed-frame {
+	position: relative;
+	aspect-ratio: 16 / 9;
+	border-radius: var(--editor-radius, 12px);
+	overflow: hidden;
+	background: #000;
+}
+
+.embed-frame iframe {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: 0;
+}
+
+/* 구분선 다섯 모양 (DividerNode). 모양은 data-variant 하나로 싣는다.
+ * 에디터 안의 선과 모양 고르개의 견본도 같은 규칙으로 그린다. */
+:is(hr.divider, hr.editor-hr, hr.le-divider-sample)[data-variant] {
+	position: relative;
+	height: 1px;
+	overflow: visible;
+	margin: 2.4em auto;
+	border: 0;
+	background: var(--editor-divider, #a1a1aa);
+	color: var(--editor-divider, #a1a1aa);
+}
+
+:is(hr.divider, hr.editor-hr, hr.le-divider-sample)[data-variant="line"] {
+	width: 100%;
+	background: var(--editor-line, #e4e4e7);
+}
+
+:is(hr.divider, hr.editor-hr, hr.le-divider-sample)[data-variant="short"] {
+	width: 64px;
+}
+
+:is(hr.divider, hr.editor-hr, hr.le-divider-sample)[data-variant="bold"] {
+	width: 44px;
+	height: 3px;
+	border-radius: 3px;
+	background: var(--editor-fg, #3f3f46);
+}
+
+:is(hr.divider, hr.editor-hr, hr.le-divider-sample)[data-variant="dots"] {
+	height: 1.2em;
+	background: none;
+	text-align: center;
+}
+
+:is(
+		hr.divider,
+		hr.editor-hr,
+		hr.le-divider-sample
+	)[data-variant="dots"]::before {
+	content: "• • •";
+	letter-spacing: 0.75em;
+	margin-inline-start: 0.75em;
+	font-size: 0.95em;
+	line-height: 1.25;
+}
+
+:is(hr.divider, hr.editor-hr, hr.le-divider-sample)[data-variant="diamond"] {
+	width: 180px;
+	background: linear-gradient(
+		to right,
+		currentColor 0 44%,
+		transparent 44% 56%,
+		currentColor 56% 100%
+	);
+}
+
+:is(
+		hr.divider,
+		hr.editor-hr,
+		hr.le-divider-sample
+	)[data-variant="diamond"]::before {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 6px;
+	height: 6px;
+	border: 1px solid currentColor;
+	transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* 표 — 에디터가 박는 칸 너비·테두리는 거르고(sanitize) 여기서 그린다 */
+table.editor-table {
+	width: 100%;
+	border-collapse: collapse;
+	table-layout: fixed;
+	margin: 1.8em 0;
+	font-size: 0.94em;
+}
+
+table.editor-table :is(th, td) {
+	border: 1px solid var(--editor-line, #e4e4e7);
+	padding: 0.5em 0.7em;
+	vertical-align: top;
+	text-align: start;
+}
+
+table.editor-table th {
+	background: var(--editor-soft, #f4f4f5);
+	font-weight: 600;
+}
+
+table.editor-table :is(th, td) > p {
+	margin: 0;
+}

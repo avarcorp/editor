@@ -1,0 +1,77 @@
+import type { EditorThemeClasses } from "lexical";
+
+/**
+ * Lexical 노드 → CSS 클래스 매핑. 클래스 본체는 styles/editor.css 에 있다.
+ *
+ * 이 이름들(editor-*)은 저장되는 HTML 에도 실린다. 바꾸면 예전 글과 새 글의
+ * 모양이 갈리니 함부로 바꾸지 않는다. 에디터 화면의 도구(le-*)와는 따로 논다.
+ */
+export const editorTheme: EditorThemeClasses = {
+	paragraph: "editor-paragraph",
+	quote: "editor-quote",
+	heading: {
+		h1: "editor-heading-h1",
+		h2: "editor-heading-h2",
+		h3: "editor-heading-h3",
+	},
+	list: {
+		ol: "editor-list-ol",
+		ul: "editor-list-ul",
+		nested: { listitem: "editor-nested-list-item" },
+		listitem: "editor-listitem",
+		listitemChecked: "editor-listitem-checked",
+		listitemUnchecked: "editor-listitem-unchecked",
+	},
+	text: {
+		bold: "editor-text-bold",
+		italic: "editor-text-italic",
+		underline: "editor-text-underline",
+		strikethrough: "editor-text-strikethrough",
+		underlineStrikethrough: "editor-text-underlineStrikethrough",
+		code: "editor-text-code",
+	},
+	link: "editor-link",
+	hr: "editor-hr",
+	hrSelected: "selected",
+	image: "editor-image",
+	video: "editor-video-host",
+	embed: "editor-embed-host",
+	code: "editor-code",
+	table: "editor-table",
+	tableCell: "editor-table-cell",
+	tableCellHeader: "editor-table-cell-header",
+	tableSelection: "editor-table-selection",
+	tableCellSelected: "editor-table-cell-selected",
+	codeHighlight: {
+		atrule: "editor-token-attr",
+		attr: "editor-token-attr",
+		boolean: "editor-token-property",
+		builtin: "editor-token-selector",
+		cdata: "editor-token-comment",
+		char: "editor-token-selector",
+		class: "editor-token-function",
+		"class-name": "editor-token-function",
+		comment: "editor-token-comment",
+		constant: "editor-token-property",
+		deleted: "editor-token-property",
+		doctype: "editor-token-comment",
+		entity: "editor-token-operator",
+		function: "editor-token-function",
+		important: "editor-token-variable",
+		inserted: "editor-token-selector",
+		keyword: "editor-token-attr",
+		namespace: "editor-token-variable",
+		number: "editor-token-property",
+		operator: "editor-token-operator",
+		prolog: "editor-token-comment",
+		property: "editor-token-property",
+		punctuation: "editor-token-punctuation",
+		regex: "editor-token-variable",
+		selector: "editor-token-selector",
+		string: "editor-token-selector",
+		symbol: "editor-token-property",
+		tag: "editor-token-property",
+		url: "editor-token-operator",
+		variable: "editor-token-variable",
+	},
+};

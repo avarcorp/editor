@@ -5,6 +5,8 @@ import {
 	$createParagraphNode,
 	$createTextNode,
 	$getRoot,
+	$getSelection,
+	$isRangeSelection,
 	UNDO_COMMAND,
 } from "lexical";
 import { createRef } from "react";
@@ -169,16 +171,22 @@ describe("본문 아래 빈 곳 (issue #1)", () => {
 		);
 	}
 
-	function lastBlock(handle: EditorHandle | null) {
+	/** 블록 구성과 커서가 놓인 블록. 문단만 생기고 커서가 안 가면 여전히 막힌다. */
+	function endState(handle: EditorHandle | null) {
 		return (
 			handle
 				?.lexical()
 				?.getEditorState()
 				.read(() => {
 					const children = $getRoot().getChildren();
+					const selection = $getSelection();
+					const caret = $isRangeSelection(selection)
+						? selection.anchor.getNode().getTopLevelElementOrThrow().getType()
+						: null;
 					return {
 						count: children.length,
 						last: children[children.length - 1]?.getType() ?? null,
+						caret,
 					};
 				}) ?? null
 		);
@@ -189,7 +197,12 @@ describe("본문 아래 빈 곳 (issue #1)", () => {
 		const view = render(<Editor messages={en} handleRef={ref} />);
 		endWithCode(ref.current);
 
-		expect(lastBlock(ref.current)).toEqual({ count: 2, last: "code" });
+		// 아직 아무 데도 누르지 않아 커서가 없다
+		expect(endState(ref.current)).toEqual({
+			count: 2,
+			last: "code",
+			caret: null,
+		});
 
 		const tail = view.container.querySelector(".le-content-tail");
 		if (!tail) throw new Error("본문 아래 빈 곳이 없다");
@@ -197,6 +210,10 @@ describe("본문 아래 빈 곳 (issue #1)", () => {
 			fireEvent.mouseDown(tail);
 		});
 
-		expect(lastBlock(ref.current)).toEqual({ count: 3, last: "paragraph" });
+		expect(endState(ref.current)).toEqual({
+			count: 3,
+			last: "paragraph",
+			caret: "paragraph",
+		});
 	});
 });

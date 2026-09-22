@@ -4,7 +4,6 @@ import {
 	$getRoot,
 	$isElementNode,
 	type ElementNode,
-	type LexicalNode,
 } from "lexical";
 import { SKIP_AUTOSAVE_TAG } from "../media/media-upload.ts";
 
@@ -45,19 +44,25 @@ export function followDistance(
 }
 
 /**
- * 이 블록 안에서 글을 이어 쓸 수 있는가.
+ * 이 블록 안에서 본문을 이어 쓸 수 있는가. 커서가 들어가는 블록(ElementNode)만
+ * 묻는다 — 사진 · 구분선 · 영상은 들어갈 속이 없어 부르는 쪽에서 걸러진다.
  *
- * 세 가지를 모두 물어본다. 커서가 안으로 들어가는가 — 사진 · 구분선 · 영상처럼
- * 통째로 하나인 블록은 들어갈 속이 없다. 그 속이 본문의 연장인가 — 표는 안이
- * 따로 노는 문서라 칸에 커서를 두어도 글을 잇는 게 아니다. 들어간 뒤 Enter 로
- * 빠져나올 수 있는가 — 코드블록은 Enter 가 줄바꿈이라 한 번 들어가면 나올 길이
- * 없다. 인용구는 Enter 두 번이면 나오므로 이어 쓸 수 있는 쪽이다.
+ * 묻는 건 커서가 들어가느냐가 아니라 거기 친 글자가 본문의 연장이 되느냐다.
+ * 본문 아래를 누르는 건 "여기에 글을 쓰겠다" 는 뜻이라서다. 표는 속이 있지만
+ * 칸 안은 따로 노는 문서다(isShadowRoot — 표가 아닌 커스텀 격자도 같이 걸린다).
+ * 코드블록은 글자를 받지만 그건 코드지 본문이 아니다 — 친 글자마다 문법 색이
+ * 입는다. 인용구 · 목록 · 제목은 모양만 다른 본문이라 그 안에서 이어 쓴다.
  *
- * 모르는 블록은 이어 쓸 수 있다고 본다. 커스텀 노드는 대개 문단을 담는 껍데기고,
- * 아니라면 셋 중 앞의 두 물음(DecoratorNode · isShadowRoot)에 이미 걸린다.
+ * 코드블록도 끝에서 Enter 를 세 번 치면 빠져나오기는 한다
+ * ($exitCodeNodeOnEnter). 아래를 눌러 놓고 빈 줄을 세 번 넣어야 하는 건 이어
+ * 쓰기가 아니라서 출구로 치지 않는다.
+ *
+ * 모르는 블록은 이어 쓸 수 있다고 본다 — 커스텀 노드는 대개 문단을 담는
+ * 껍데기다. 다만 본문 아닌 것을 담는 커스텀 ElementNode(터미널 · 다이어그램
+ * 같은 것)가 shadow root 도 아니면 여기서 걸러지지 않는다. 그런 노드는 표처럼
+ * isShadowRoot() 를 켜 두면 된다.
  */
-function $canContinueWriting(node: LexicalNode | null): node is ElementNode {
-	if (!$isElementNode(node)) return false;
+function $canContinueWriting(node: ElementNode): boolean {
 	if (node.isShadowRoot()) return false;
 	return !$isCodeNode(node);
 }
@@ -65,14 +70,14 @@ function $canContinueWriting(node: LexicalNode | null): node is ElementNode {
 /**
  * 본문 아래 빈 곳을 눌렀을 때 커서를 글 끝에 둔다.
  *
- * 마지막 블록이 글을 이어 쓸 수 없는 것(사진 · 구분선 · 표 · 코드블록)이면 그
+ * 마지막 블록이 본문을 이어 쓸 수 없는 것(사진 · 구분선 · 표 · 코드블록)이면 그
  * 아래에 빈 문단을 만든다. 사진으로 끝난 글에서 아래를 눌렀는데 아무 일도 없으면
  * 이어 쓸 방법을 찾아야 한다.
  */
 export function $placeCaretAtEnd(): void {
 	const root = $getRoot();
 	const last = root.getLastChild();
-	if ($canContinueWriting(last)) {
+	if ($isElementNode(last) && $canContinueWriting(last)) {
 		last.selectEnd();
 		return;
 	}

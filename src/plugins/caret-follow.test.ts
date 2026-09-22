@@ -9,7 +9,10 @@ import {
 	$getSelection,
 	$isRangeSelection,
 	createEditor,
+	ElementNode,
+	type Klass,
 	type LexicalEditor,
+	type LexicalNode,
 } from "lexical";
 import { describe, expect, it } from "vitest";
 import { $createDividerNode } from "../nodes/DividerNode.tsx";
@@ -86,10 +89,32 @@ describe("followDistance — 아래로 얼마나 내릴까", () => {
 	});
 });
 
-function makeEditor(): LexicalEditor {
+/**
+ * 표가 아닌 shadow root. 앱이 붙인 격자형 커스텀 노드 자리다 — 이름(표)이 아니라
+ * isShadowRoot() 로 묻는지 가른다.
+ */
+class ShadowBlockNode extends ElementNode {
+	static getType(): string {
+		return "shadow-block";
+	}
+	static clone(node: ShadowBlockNode): ShadowBlockNode {
+		return new ShadowBlockNode(node.__key);
+	}
+	createDOM(): HTMLElement {
+		throw new Error("그리지 않는다 — 트리만 쓰는 테스트다");
+	}
+	updateDOM(): boolean {
+		return false;
+	}
+	isShadowRoot(): boolean {
+		return true;
+	}
+}
+
+function makeEditor(extra: Array<Klass<LexicalNode>> = []): LexicalEditor {
 	return createEditor({
 		namespace: "test",
-		nodes: editorNodes,
+		nodes: [...editorNodes, ...extra],
 		theme: editorTheme,
 		onError: (error) => {
 			throw error;
@@ -233,6 +258,24 @@ describe("$placeCaretAtEnd — 본문 아래 빈 곳을 눌렀을 때", () => {
 			{ discrete: true },
 		);
 		expect(caretIn(editor)).toEqual({ index: 0, type: "list", atEnd: true });
+	});
+
+	it("표가 아니어도 안이 따로 노는 블록이면 새 문단을 만든다", () => {
+		const editor = makeEditor([ShadowBlockNode]);
+		editor.update(
+			() => {
+				const block = new ShadowBlockNode();
+				block.append($createParagraphNode().append($createTextNode("칸")));
+				$getRoot().append(block);
+				$placeCaretAtEnd();
+			},
+			{ discrete: true },
+		);
+		expect(caretIn(editor)).toEqual({
+			index: 1,
+			type: "paragraph",
+			atEnd: true,
+		});
 	});
 
 	it("빈 문서면 문단을 하나 만든다", () => {

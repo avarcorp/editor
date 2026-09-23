@@ -12,12 +12,12 @@
   ],
   "license": "MIT",
   "author": "AvarLabs",
-  "homepage": "https://github.com/cochoio/editor#readme",
+  "homepage": "https://github.com/avarcorp/editor#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cochoio/editor.git"
+    "url": "git+https://github.com/avarcorp/editor.git"
   },
-  "bugs": "https://github.com/cochoio/editor/issues",
+  "bugs": "https://github.com/avarcorp/editor/issues",
   "type": "module",
   "sideEffects": [
     "*.css",

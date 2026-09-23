@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
  * 공개 패키지라서, 여기서 가져올 수 있는 건 React ·
  * Lexical · 글 정리용 xss 와 패키지 안의 파일뿐이다. 앱 코드(#/…)나 앱이 쓰는
  * 도구(라우터, React Query, 아이콘 묶음, Tailwind 도우미)를 부르는 순간 떼어 낼 수
- * 없게 된다. 코드블록 문법(prismjs/components/*)만 예외다 — Lexical 의 코드
+ * 없게 된다. 코드블록 문법(prismjs, prismjs/components/*)만 예외다 — Lexical 의 코드
  * 하이라이터가 이미 prismjs 위에 서 있다.
  */
 const ALLOWED = [
@@ -20,6 +20,8 @@ const ALLOWED = [
 	/^@lexical\/[\w-]+(\/[\w-]+)?$/,
 	/^xss$/,
 	// 코드블록 문법. @lexical/code-prism 이 이미 prismjs 를 요구한다 (code-languages.ts)
+	// 코어는 prism-global.ts 가 언어 파일보다 먼저 전역에 올린다
+	/^prismjs$/,
 	/^prismjs\/components\/prism-[\w-]+\.js$/,
 	// 테스트만 쓰는 것
 	/^vitest$/,

@@ -21,7 +21,9 @@
   "type": "module",
   "sideEffects": [
     "*.css",
-    "**/CodeHighlightPlugin.*"
+    "**/CodeHighlightPlugin.*",
+    "**/prism-global.*",
+    "./dist/index.js"
   ],
   "publishConfig": {
     "access": "public"
@@ -45,7 +47,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && cp -R src/styles dist/styles",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp -R src/styles dist/styles",
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "test": "vitest run",

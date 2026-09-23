@@ -1,6 +1,6 @@
 {
   "name": "@avarlabs/editor",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Korean-first rich text editor for blogs, built on Lexical. Upload, storage, copy and colors are all injected.",
   "keywords": [
     "editor",

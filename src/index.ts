@@ -4,6 +4,9 @@
  * 글 HTML 을 거르는 sanitizeHtml 은 서버에서도 쓰므로 React 를 끌고 오지 않게
  * 따로 둔다 — `@avarlabs/editor/sanitize`.
  */
+// 가장 먼저 와야 한다. 다른 import 가 Prism 언어 파일을 끌고 오기 전에 코어를 전역에 올린다
+import "./prism-global.ts";
+
 export {
 	type BlockId,
 	type InsertId,

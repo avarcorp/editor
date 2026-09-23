@@ -21,7 +21,9 @@
   "type": "module",
   "sideEffects": [
     "*.css",
-    "**/CodeHighlightPlugin.*"
+    "**/CodeHighlightPlugin.*",
+    "**/prism-global.*",
+    "./dist/index.js"
   ],
   "publishConfig": {
     "access": "public"
@@ -49,6 +51,8 @@
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "test": "vitest run",
+    "test:dist": "pnpm run build && vitest run -c vitest.dist.config.ts",
+    "test:e2e": "pnpm run build && playwright test",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm run check && pnpm run typecheck && pnpm run test && pnpm run build"
   },
@@ -86,18 +90,22 @@
     "@lexical/selection": "^0.50.0",
     "@lexical/table": "^0.50.0",
     "@lexical/utils": "^0.50.0",
+    "@playwright/test": "^1.63.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^26.6.2",
     "@types/prismjs": "^1.26.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "happy-dom": "^20.14.3",
+    "jsdom": "^30.1.1",
     "lexical": "^0.50.0",
     "prismjs": "^1.30.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "typescript": "^5.9.3",
+    "vite": "^8.3.0",
     "vitest": "^4.1.11"
   },
   "packageManager": "pnpm@10.11.0"

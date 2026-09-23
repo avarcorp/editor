@@ -1,0 +1,49 @@
+{
+  "name": "tanstack-router",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "generate-routes": "tsr generate",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@avarlabs/editor": "file:../..",
+    "@lexical/code": "^0.50.0",
+    "@lexical/code-prism": "^0.50.0",
+    "@lexical/html": "^0.50.0",
+    "@lexical/link": "^0.50.0",
+    "@lexical/list": "^0.50.0",
+    "@lexical/markdown": "^0.50.0",
+    "@lexical/react": "^0.50.0",
+    "@lexical/rich-text": "^0.50.0",
+    "@lexical/selection": "^0.50.0",
+    "@lexical/table": "^0.50.0",
+    "@lexical/utils": "^0.50.0",
+    "@tanstack/react-router": "latest",
+    "lexical": "^0.50.0",
+    "prismjs": "^1.30.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@tanstack/router-cli": "^1.132.0",
+    "@tanstack/router-plugin": "latest",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "lightningcss"
+    ]
+  }
+}

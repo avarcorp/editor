@@ -6,7 +6,8 @@ import {
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 /*
  * @lexical/code-prism 이 싣는 문법에는 없지만 우리 글에 자주 나오는 것들.
- * Prism 전역에 붙으므로 위 import 뒤에 와야 한다 (code-languages.ts 의 목록과 짝).
+ * Prism 전역에 붙는다. import 순서만으로는 코어가 먼저 돈다는 보장이 없어서 코어는
+ * prism-global.ts 가 index.ts 의 첫 import 로 먼저 올린다 (code-languages.ts 의 목록과 짝).
  */
 import "prismjs/components/prism-bash.js";
 import "prismjs/components/prism-dart.js";

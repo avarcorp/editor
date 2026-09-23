@@ -21,4 +21,29 @@ jobs:
       - run: pnpm run check
       - run: pnpm run typecheck
       - run: pnpm run test
-      - run: pnpm run build
+      # 빌드한 dist 를 Vite 8 번들과 Node 에서 불러 본다 (빌드를 겸한다)
+      - run: pnpm run test:dist
+
+  # 예제 앱(Next.js · React Router · TanStack Router)을 프로덕션 빌드해 브라우저로 연다
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            example/*/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      # 예제 설치 · 빌드 · 실행은 playwright.config.ts 의 webServer 가 한다
+      - run: pnpm run test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results
+          retention-days: 7
